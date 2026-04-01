@@ -1,0 +1,26 @@
+# .gitignore
+
+# Virtual environment
+venv/
+venv311/
+
+# Model weights (too large + download from source)
+models/
+
+# Database (private student data)
+database/
+
+# Attendance logs (personal data)
+logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code settings
+.vscode/
+
+# Windows files
+Thumbs.db
+desktop.ini
