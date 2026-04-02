@@ -283,18 +283,8 @@ DETECTION_CONF = 0.5     # Minimum YOLO confidence
 ```csv
 Name,                        Date,       Time,     Confidence
 Haneen Mohammed Mousa,       2026-03-27, 09:03:22, 0.923
-Rokia Mosaad Hamad,          2026-03-27, 09:03:24, 0.871
-Nesma Mohammed Abd Elmenaem, 2026-03-27, 09:03:25, 0.912
+
 ```
-
----
-
-## ⚠️ Notes
-
-- `database.pkl` contains face embeddings — **never share publicly** (privacy)
-- `logs/` contains attendance records — **keep private**
-- Model weights are for **non-commercial research** use only (insightface license)
-- Val set was **never augmented** — accuracy reflects real-world performance
 
 ---
 
