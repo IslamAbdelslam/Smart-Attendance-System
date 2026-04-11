@@ -1,26 +1,40 @@
-# .gitignore
-
 # Virtual environment
 venv/
 venv311/
-
-# Model weights (too large + download from source)
-models/
-
-# Database (private student data)
-database/
-
-# Attendance logs (personal data)
-logs/
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# VS Code settings
+# Model weights (too large + download from source)
+Models/
+models/
+Smart_Attendence_system_APP/Models/
+
+# Database (private student data)
+Database/
+database/
+Smart_Attendence_system_APP/database/
+*.pkl
+
+# Attendance logs (private)
+logs/
+Smart_Attendence_system_APP/logs/
+
+# Reports
+Reports/
+
+# VS Code
 .vscode/
 
-# Windows files
+# Windows
 Thumbs.db
 desktop.ini
+.DS_Store
+
+# Environment variables
+.env
+
+# Git attributes already tracked

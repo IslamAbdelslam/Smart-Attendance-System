@@ -1,342 +1,176 @@
-# 🎓 Smart Attendance System
-### Automated Face Recognition Attendance using YOLOv8 + ArcFace
+# Smart Attendance System
 
-> **Graduation Project** — Statistics & Computer Science Department, Mansoura University  
-> Achieved **100% accuracy** on validation set with **0 wrong predictions**
+Automated face recognition attendance using **YOLOv8 + ArcFace**
 
----
+> Graduation Project — Faculty of Computers and Information Sciences, Mansoura University 2026
 
-## 📋 Table of Contents
-- [Overview](#overview)
-- [Pipeline](#pipeline)
-- [Results](#results)
-- [Project Structure](#project-structure)
-- [Installation](#installation)
-- [Download Model Weights](#download-model-weights)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Dataset](#dataset)
-- [Technologies Used](#technologies-used)
-- [Future Work](#future-work)
+**Live Demo:** [huggingface.co/spaces/Haneen13/smart-attendance-system](https://huggingface.co/spaces/Haneen13/smart-attendance-system)
 
 ---
 
-## 🔍 Overview
+## Overview
 
-This system automatically marks student attendance using face recognition from a camera feed. Students are recognized as they enter the classroom — no manual roll call needed.
+An AI-powered system that automatically marks student attendance by recognizing all faces in a classroom frame simultaneously. No manual roll call. No delays.
 
-**Key Features:**
-- Detects multiple faces simultaneously in one frame
-- Never confuses two different people (0 wrong predictions)
-- Logs attendance once per student per session (anti-duplicate)
-- Works with laptop webcam or any IoT camera via WiFi
-- Enrolls new students in under 30 seconds — no retraining ever needed
-- Face quality checks during enrollment (like Face ID)
-- Full database management (add, delete, clear students)
+The project has two parts:
+
+**Local Script** — runs on a laptop connected to a camera. Detects all faces at once, matches them against an enrolled database, and logs attendance to CSV.
+
+**Web Application** (`Smart_Attendence_system_APP/`) — a Flask website deployed on Hugging Face Spaces with a live demo, enrollment interface, and REST API.
 
 ---
 
-## 🔄 Pipeline
+## Pipeline
 
 ```
-Phase 1 — Offline Preprocessing (Google Colab)
-──────────────────────────────────────────────
-Raw Photos (classmates + LFW dataset)
-    ↓
-Data Cleaning
-  → HEIC to JPG conversion
-  → Uppercase extension fix
-  → Fake JPG detection and fix
-    ↓
-YOLOv8s-Face → Detect faces (100% success rate)
-    ↓
-insightface buffalo_sc → Align faces to 112x112
-    ↓
-Data Augmentation → expand to 100 images/classmate
-  (flip, brightness, rotation +-15 degrees, blur)
-    ↓
-ArcFace w600k_mbf → Extract 512-dim embeddings
-    ↓
-Average embeddings per person → Save database.pkl
-
-Phase 2 — Real-Time Attendance (VS Code / Python)
-──────────────────────────────────────────────────
 Camera Frame
-    ↓
-YOLOv8s-Face → Detect ALL faces simultaneously
-    ↓
-Crop + Resize to 112x112
-    ↓
-ArcFace w600k_mbf → Extract 512-dim embedding
-    ↓
-Cosine Similarity vs database.pkl (threshold=0.3)
-    ↓
-Mark present + Log to CSV
+    ↓  YOLOv8s-Face detects all faces simultaneously
+    ↓  Crop and resize to 112×112
+    ↓  ArcFace w600k_mbf extracts 512-dim identity vector
+    ↓  Cosine similarity match against enrolled database
+    →  Mark present and log to CSV
 ```
 
 ---
 
-## 📊 Results
+## Project Structure
 
-| Metric | Value |
-|--------|-------|
-| Validation accuracy | **100%** (threshold=0.3) |
-| Wrong predictions | **0** |
-| Unknown (rejected) | 0 |
-| Total persons | 21 |
-| Train images | 1834 (after augmentation) |
-| Val images | 203 |
+```
+Smart-Attendance-System/
+│
+├── Smart_Attendence_system_APP/    Web application (Hugging Face)
+│   ├── templates/index.html        Website with embedded CSS and JS
+│   ├── app.py                      Flask routes and REST API
+│   ├── config.py                   Web app settings
+│   ├── face_pipeline.py            AI pipeline for web
+│   ├── Dockerfile                  Container for Hugging Face deployment
+│   └── requirements.txt            Web app dependencies
+│
+├── NoteBook/                       Google Colab preprocessing pipeline
+│   └── Smart_attendence_system.ipynb
+│
+├── config.py                       Local script settings
+├── face_pipeline.py                AI pipeline functions
+├── main.py                         Real-time camera attendance loop
+├── enroll.py                       Enroll new students (5-capture flow)
+├── manage_database.py              Database management tool
+├── requirements.txt                Local script dependencies
+└── README.md
+```
 
-### Threshold Tuning on Val Set (203 images)
-
-| Threshold | Accuracy | Wrong | Unknown |
-|-----------|----------|-------|---------|
-| **0.3** | **100.0%** | **0** | **0** |
-| 0.4 | 99.5% | 0 | 1 |
-| 0.5 | 97.5% | 0 | 5 |
-| 0.6 | 93.6% | 0 | 13 |
-| 0.7 | 82.3% | 0 | 36 |
-
-> Wrong = 0 means the system never confused two people. The only errors were "Unknown" — the system said "not sure" instead of giving a wrong name. This is the safest failure mode for an attendance system.
+> **Not in repo:** `Models/` (download separately), `database/` (private), `logs/` (private)
 
 ---
 
-## 📁 Project Structure
+## Installation — Local Script
 
-```
-smart-attendance-system/
-│
-├── config.py              # All settings in one place
-├── face_pipeline.py       # Complete AI pipeline functions
-├── main.py                # Real-time attendance camera loop
-├── enroll.py              # Enroll new students (no retraining)
-├── manage_database.py     # Add, delete, clear enrolled students
-│
-├── requirements.txt       # Python dependencies
-├── .gitignore
-├── README.md
-│
-├── models/                # Download separately (see below)
-│   ├── yolov8s-face-lindevs.pt
-│   └── w600k_mbf.onnx
-│
-├── database/              # Generated by Colab or enroll.py
-│   └── database.pkl
-│
-└── logs/                  # Created automatically when running
-    └── attendance_log.csv
-```
+**Requirements:** Python 3.11, webcam or IoT camera
 
----
-
-## ⚙️ Installation
-
-### Requirements
-- Python 3.11 — recommended (Python 3.14 has library compatibility issues)
-- Windows / Mac / Linux
-- Webcam or IoT camera
-
-### Step 1 — Clone Repository
 ```bash
 git clone https://github.com/Haneenmohammed1311/Smart-Attendance-System.git
 cd Smart-Attendance-System
-```
 
-### Step 2 — Create Virtual Environment
-```bash
-# Windows — use Python 3.11 specifically
 py -3.11 -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate          # Windows
+source venv/bin/activate       # Mac/Linux
 
-# Mac/Linux
-python3.11 -m venv venv
-source venv/bin/activate
-```
-
-### Step 3 — Install Dependencies
-```bash
 pip install -r requirements.txt
 ```
 
-> If insightface fails:
-> ```bash
-> pip install insightface --only-binary=:all:
-> ```
+> If insightface fails: `pip install insightface --only-binary=:all:`
 
----
+**Download model weights:**
 
-## 📥 Download Model Weights
-
-Model weights are not included due to file size. Download manually:
-
-### 1. YOLOv8s-Face (21MB)
 ```
-URL     : https://github.com/lindevs/yolov8-face/releases
-File    : yolov8s-face-lindevs.pt
-Save to : models/yolov8s-face-lindevs.pt
-```
+YOLOv8s-Face  →  https://github.com/lindevs/yolov8-face/releases
+               →  save as: models/yolov8s-face-lindevs.pt
 
-### 2. ArcFace w600k_mbf (65MB)
-```
-URL     : https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_sc.zip
-Steps   : Download buffalo_sc.zip → extract → find w600k_mbf.onnx
-Save to : models/w600k_mbf.onnx
+ArcFace       →  https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_sc.zip
+               →  extract w600k_mbf.onnx, save as: models/w600k_mbf.onnx
 ```
 
 ---
 
-## 🚀 Usage
+## Usage — Local Script
 
-### 1. Enroll Students First
+**Enroll students**
 ```bash
 python enroll.py
 ```
-- Enter student full name
-- Follow quality guide on screen (like Face ID):
-  - Face must be centered in frame
-  - Not too close or too far from camera
-  - Look directly at camera
-  - Hold still — no blur allowed
-- Press SPACE 5 times to capture
-- Student added to database instantly — no retraining needed
+Enter name, capture 5 photos with quality checks. Each capture is verified before being accepted.
 
-### 2. Run Real-Time Attendance
+**Run attendance**
 ```bash
 python main.py
 ```
-- Camera opens and detects all faces simultaneously
-- Color code:
-  - Green  → just marked present
-  - Yellow → already marked this session
-  - Red    → unknown person
-- Counter shows Present: X/21 in real time
-- Attendance logged to logs/attendance_log.csv
-- Press Q to quit and see present/absent summary
+All faces in frame are recognized simultaneously. Press Q to quit and see session summary.
 
-### 3. Manage Database
+**Manage database**
 ```bash
 python manage_database.py
 ```
-- View all enrolled students with list
-- Delete a specific student by name
-- Clear entire database
-- No need to rerun Colab preprocessing
 
-### 4. Switch to IoT Camera
-Edit `config.py`:
+**Switch camera source** — edit `config.py`:
 ```python
-CAMERA_SOURCE = 0                              # Laptop webcam (default)
-CAMERA_SOURCE = "http://192.168.1.100/video"   # ESP32-CAM via WiFi
-CAMERA_SOURCE = "rtsp://192.168.1.100:554"     # IP Camera via RTSP
+CAMERA_SOURCE = 0                              # Laptop webcam
+CAMERA_SOURCE = "http://192.168.1.100/video"   # IoT camera via WiFi
 ```
 
 ---
 
-## 🔧 Configuration
+## Installation — Web Application
 
-All settings in `config.py`:
+```bash
+cd Smart_Attendence_system_APP
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `THRESHOLD` | `0.3` | Cosine similarity threshold |
-| `CAMERA_SOURCE` | `0` | Camera input |
-| `YOLO_PATH` | `models/yolov8s-face-lindevs.pt` | YOLOv8 weights path |
-| `ARCFACE_PATH` | `models/w600k_mbf.onnx` | ArcFace weights path |
-| `DATABASE_PATH` | `database/database.pkl` | Embeddings database path |
-| `LOG_PATH` | `logs/attendance_log.csv` | Attendance output path |
-| `PADDING` | `20` | Pixels added around detected face |
-| `IMG_SIZE` | `112` | ArcFace input size (always 112) |
-| `DETECTION_CONF` | `0.5` | Minimum YOLO confidence |
+py -3.11 -m venv venv
+venv\Scripts\activate
 
----
+pip install -r requirements.txt
 
-## 📊 Dataset
-
-### Sources
-
-| Source | Persons | Train | Val | Total |
-|--------|---------|-------|-----|-------|
-| Custom classmates (mobile photos) | 16 | 597 | 156 | 753 |
-| LFW benchmark (50-70 images/person) | 5 | 234 | 47 | 281 |
-| **TOTAL** | **21** | **641** | **203** | **844** |
-
-### After Augmentation
-
-| Set | Before | After |
-|-----|--------|-------|
-| Train | 641 | 1834 |
-| Val | 203 | 203 (never augmented) |
-
-### Augmentation Techniques
-
-| Technique | Justification |
-|-----------|---------------|
-| Horizontal flip | Natural left/right variation |
-| Brightness x0.6-1.4 | Different classroom lighting |
-| Rotation +-15 degrees | Natural head tilt |
-| Gaussian blur (kernel 3 or 5) | Camera focus variation |
-
----
-
-## 🛠️ Technologies Used
-
-| Component | Tool | Purpose |
-|-----------|------|---------|
-| Face Detection | YOLOv8s-Face (lindevs, 2023) | Detect faces in frame |
-| Face Alignment | insightface buffalo_sc | Align to 112x112 (Colab preprocessing) |
-| Face Embedding | ArcFace w600k_mbf (CVPR 2019) | Extract 512-dim identity vector |
-| Similarity Matching | Cosine Similarity | Match query embedding vs database |
-| Camera Interface | OpenCV VideoCapture | Read webcam or IoT camera frames |
-| Model Runtime | ONNX Runtime | Run .onnx models on CPU |
-| Preprocessing | Google Colab | Data pipeline and embedding extraction |
-| Deployment | VS Code + Python 3.11 | Real-time attendance script |
-
-### Key Papers
-
-| Paper | Authors | Venue |
-|-------|---------|-------|
-| ArcFace: Additive Angular Margin Loss | Deng et al. | CVPR 2019 |
-| YOLOv8 | Jocher, Chaurasia, Qiu | Ultralytics 2023 |
-| RetinaFace: Single-stage Dense Face Localisation | Deng et al. | CVPR 2020 |
-| Joint Face Detection and Alignment (MTCNN) | Zhang et al. | IEEE SPL 2016 |
-| Labeled Faces in the Wild (LFW) | Huang et al. | UMass 2007 |
-| WIDER FACE: A Face Detection Benchmark | Yang et al. | CVPR 2016 |
-
-
-
----
-
-## 📝 Attendance Log Format
-
-```csv
-Name,Date,Time,Confidence
-Haneen Mohammed Mousa,2026-03-27,09:03:22,0.923
-
+python app.py
+# Open: http://localhost:7860
 ```
 
 ---
 
-## 🗂️ File Descriptions
+## REST API
 
-| File | Description |
-|------|-------------|
-| `config.py` | All tunable settings — only file you need to edit |
-| `face_pipeline.py` | Core AI functions: detect, align, embed, match, log, draw |
-| `main.py` | Real-time camera loop — runs the attendance system |
-| `enroll.py` | Enrolls new students with face quality checks |
-| `manage_database.py` | View, delete, or clear enrolled students |
-
----
-
-## ⚠️ Important Notes
-
-- `database.pkl` contains face embeddings — never share publicly (student privacy)
-- `logs/` contains attendance records — keep private
-- Model weights are for non-commercial research use only (insightface license)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /recognize | Upload frame, detect all faces, return names |
+| POST | /enroll/capture | One capture per call, call 5 times |
+| POST | /enroll/save | Save averaged embeddings to database |
+| GET | /attendance | Today's attendance log |
+| GET | /database | List enrolled students |
+| DELETE | /database/name | Remove a student |
 
 ---
 
-## 📄 License
+## Technologies
 
-This project is for academic and research purposes only.  
-Model weights follow the [InsightFace non-commercial research license](https://github.com/deepinsight/insightface).
+| Component | Tool |
+|---|---|
+| Face Detection | YOLOv8s-Face (lindevs) |
+| Face Alignment | insightface buffalo_sc |
+| Face Embedding | ArcFace w600k_mbf (CVPR 2019) |
+| Similarity | Cosine Similarity |
+| Camera | OpenCV VideoCapture |
+| Runtime | ONNX Runtime (CPU) |
+| Web Framework | Flask |
+| Deployment | Hugging Face Spaces + Docker |
+
+---
+
+## Deployment on Hugging Face
+
+Flask on Hugging Face Spaces requires Docker. The `Dockerfile` is included in `Smart_Attendence_system_APP/`.
+
+The app listens on port 7860. Model files are uploaded separately via the Hugging Face Files tab.
+
+---
+
+## License
+
+Academic and research use only.
+Model weights follow the [InsightFace non-commercial license](https://github.com/deepinsight/insightface).
