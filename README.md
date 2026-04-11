@@ -21,15 +21,44 @@ The project has two parts:
 ---
 
 ## ⚙️ Pipeline
+```
+Phase 1 — Offline Preprocessing (Google Colab)
+──────────────────────────────────────────────
+Raw Photos (classmates + LFW dataset)
+    ↓
+Data Cleaning
+  → HEIC to JPG conversion
+  → Uppercase extension fix
+  → Fake JPG detection and fix
+    ↓
+YOLOv8s-Face → Detect faces (100% success rate)
+    ↓
+insightface buffalo_sc → Align faces to 112x112
+    ↓
+Data Augmentation → expand to 100 images/classmate
+  (flip, brightness, rotation +-15 degrees, blur)
+    ↓
+ArcFace w600k_mbf → Extract 512-dim embeddings
+    ↓
+Average embeddings per person → Save database.pkl
 
-```
+Phase 2 — Real-Time Attendance (VS Code / Python)
+──────────────────────────────────────────────────
 Camera Frame
-    ↓  YOLOv8s-Face detects all faces simultaneously
-    ↓  Crop and resize to 112×112
-    ↓  ArcFace w600k_mbf extracts 512-dim identity vector
-    ↓  Cosine similarity match against enrolled database
-    →  Mark present and log to CSV
+    ↓
+YOLOv8s-Face → Detect ALL faces simultaneously
+    ↓
+Crop + Resize to 112x112
+    ↓
+ArcFace w600k_mbf → Extract 512-dim embedding
+    ↓
+Cosine Similarity vs database.pkl 
+    ↓
+Mark present + Log to CSV
 ```
+
+---
+
 
 
 ---
@@ -47,17 +76,37 @@ Smart-Attendance-System/
 │   ├── Dockerfile                     Container for Hugging Face deployment
 │   └── requirements.txt               Web app dependencies
 │
-├──  NoteBook/                       Google Colab preprocessing pipeline
-│   └── Smart_attendence_system.ipynb
 │
-├──  config.py                       Local script settings
-├──  face_pipeline.py                AI pipeline functions
-├──  main.py                         Real-time camera attendance loop
-├──  enroll.py                       Enroll new students (5-capture flow)
-├──  manage_database.py              Database management tool
-├──  requirements.txt                Local script dependencies
-└──  README.md
+├── config.py              # All settings in one place
+├── face_pipeline.py       # Complete AI pipeline functions
+├── main.py                # Real-time attendance camera loop
+├── enroll.py              # Enroll new students (no retraining)
+├── manage_database.py     # Add, delete, clear enrolled students
+│
+├── requirements.txt       # Python dependencies
+├── .gitignore
+├── README.md
+│
+├── models/                # Download separately (see below)
+│   ├── yolov8s-face-lindevs.pt
+│   └── w600k_mbf.onnx
+│
+├── database/              # private data or enroll.py
+│   └── database.pkl
+│
+└── logs/                  # Created automatically when running
+    └── attendance_log.csv
 ```
+## 🗂️ File Descriptions
+
+| File | Description |
+|------|-------------|
+| `config.py` | All tunable settings — only file you need to edit |
+| `face_pipeline.py` | Core AI functions: detect, align, embed, match, log, draw |
+| `main.py` | Real-time camera loop — runs the attendance system |
+| `enroll.py` | Enrolls new students with face quality checks |
+| `manage_database.py` | View, delete, or clear enrolled students |
+
 
 > ⚠️ **Not in repo:** `Models/` (download separately), `database/` (private student data), `logs/` (private attendance records)
 
@@ -101,7 +150,14 @@ pip install -r requirements.txt
 ```bash
 python enroll.py
 ```
-Enter name, capture 5 photos with quality checks. Each capture is verified before being accepted just like Face ID.
+- Enter student full name
+- Follow quality guide on screen (like Face ID):
+  - Face must be centered in frame
+  - Not too close or too far from camera
+  - Look directly at camera
+  - Hold still — no blur allowed
+- Press SPACE 5 times to capture
+- Student added to database instantly — no retraining needed
 
 **📸 Run attendance**
 ```bash
@@ -138,7 +194,22 @@ pip install -r requirements.txt
 python app.py
 # Open: http://localhost:7860
 ```
+---
+## 🔧 Configuration
 
+All settings in `config.py`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `THRESHOLD` | `0.3` | Cosine similarity threshold |
+| `CAMERA_SOURCE` | `0` | Camera input |
+| `YOLO_PATH` | `models/yolov8s-face-lindevs.pt` | YOLOv8 weights path |
+| `ARCFACE_PATH` | `models/w600k_mbf.onnx` | ArcFace weights path |
+| `DATABASE_PATH` | `database/database.pkl` | Embeddings database path |
+| `LOG_PATH` | `logs/attendance_log.csv` | Attendance output path |
+| `PADDING` | `20` | Pixels added around detected face |
+| `IMG_SIZE` | `112` | ArcFace input size (always 112) |
+| `DETECTION_CONF` | `0.5` | Minimum YOLO confidence |
 ---
 
 ## 🔌 REST API
@@ -157,16 +228,18 @@ python app.py
 
 ## 🛠️ Technologies
 
-| Component | Tool |
-|---|---|
-| 🎯 Face Detection | YOLOv8s-Face (lindevs, 2023) |
-| ✂️ Face Alignment | insightface buffalo_sc |
-| 🧠 Face Embedding | ArcFace w600k_mbf (CVPR 2019) |
-| 🔍 Similarity | Cosine Similarity |
-| 📷 Camera | OpenCV VideoCapture |
-| ⚡ Runtime | ONNX Runtime (CPU) |
-| 🌐 Web Framework | Flask |
-| 🚀 Deployment | Hugging Face Spaces + Docker |
+| Component | Tool | Purpose |
+|-----------|------|---------|
+| Face Detection | YOLOv8s-Face (lindevs, 2023) | Detect faces in frame |
+| Face Alignment | insightface buffalo_sc | Align to 112x112 (Colab preprocessing) |
+| Face Embedding | ArcFace w600k_mbf (CVPR 2019) | Extract 512-dim identity vector |
+| Similarity Matching | Cosine Similarity | Match query embedding vs database |
+| Camera Interface | OpenCV VideoCapture | Read webcam or IoT camera frames |
+| Model Runtime | ONNX Runtime | Run .onnx models on CPU |
+| Preprocessing | Google Colab | Data pipeline and embedding extraction |
+| Deployment | VS Code + Python 3.11 | Real-time attendance script |
+|  Web Framework | Flask |
+|  Deployment | Hugging Face Spaces + Docker |
 
 ---
 
@@ -191,4 +264,4 @@ The app listens on port 7860. Model files are uploaded separately via the Huggin
 ## 📄 License
 
 Academic and research use only.
-Model weights follow the [InsightFace non-commercial license](https://github.com/deepinsight/insightface).
+Model weights follow the [InsightFace non-commercial license](https://github.com/deepinsight/insightface)
