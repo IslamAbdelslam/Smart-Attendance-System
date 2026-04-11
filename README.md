@@ -1,8 +1,7 @@
 # 🎓 Smart Attendance System
 ### Automated Face Recognition Attendance using YOLOv8 + ArcFace
 
-> **Graduation Project** — Statistics & Computer Science Department, Mansoura University  
-> Achieved **100% accuracy** on validation set with **0 wrong predictions**
+> **Graduation Project** , Statistics & Computer Science Department, Mansoura University  
 
 ---
 
@@ -17,20 +16,18 @@
 - [Configuration](#configuration)
 - [Dataset](#dataset)
 - [Technologies Used](#technologies-used)
-- [Future Work](#future-work)
 
 ---
 
 ## 🔍 Overview
 
-This system automatically marks student attendance using face recognition from a camera feed. Students are recognized as they enter the classroom — no manual roll call needed.
+This system automatically marks student attendance using face recognition from a camera feed. Students are recognized as they enter the classroom.
 
 **Key Features:**
 - Detects multiple faces simultaneously in one frame
-- Never confuses two different people (0 wrong predictions)
 - Logs attendance once per student per session (anti-duplicate)
 - Works with laptop webcam or any IoT camera via WiFi
-- Enrolls new students in under 30 seconds — no retraining ever needed
+- Enrolls new students in under 30 seconds , no retraining ever needed
 - Face quality checks during enrollment (like Face ID)
 - Full database management (add, delete, clear students)
 
@@ -72,32 +69,7 @@ ArcFace w600k_mbf → Extract 512-dim embedding
 Cosine Similarity vs database.pkl (threshold=0.3)
     ↓
 Mark present + Log to CSV
-```
 
----
-
-## 📊 Results
-
-| Metric | Value |
-|--------|-------|
-| Validation accuracy | **100%** (threshold=0.3) |
-| Wrong predictions | **0** |
-| Unknown (rejected) | 0 |
-| Total persons | 21 |
-| Train images | 1834 (after augmentation) |
-| Val images | 203 |
-
-### Threshold Tuning on Val Set (203 images)
-
-| Threshold | Accuracy | Wrong | Unknown |
-|-----------|----------|-------|---------|
-| **0.3** | **100.0%** | **0** | **0** |
-| 0.4 | 99.5% | 0 | 1 |
-| 0.5 | 97.5% | 0 | 5 |
-| 0.6 | 93.6% | 0 | 13 |
-| 0.7 | 82.3% | 0 | 36 |
-
-> Wrong = 0 means the system never confused two people. The only errors were "Unknown" — the system said "not sure" instead of giving a wrong name. This is the safest failure mode for an attendance system.
 
 ---
 
@@ -144,13 +116,9 @@ cd Smart-Attendance-System
 
 ### Step 2 — Create Virtual Environment
 ```bash
-# Windows — use Python 3.11 specifically
+#  use Python 3.11 specifically
 py -3.11 -m venv venv
 venv\Scripts\activate
-
-# Mac/Linux
-python3.11 -m venv venv
-source venv/bin/activate
 ```
 
 ### Step 3 — Install Dependencies
@@ -198,7 +166,7 @@ python enroll.py
   - Look directly at camera
   - Hold still — no blur allowed
 - Press SPACE 5 times to capture
-- Student added to database instantly — no retraining needed
+- Student added to database instantly , no retraining needed
 
 ### 2. Run Real-Time Attendance
 ```bash
@@ -260,12 +228,6 @@ All settings in `config.py`:
 | LFW benchmark (50-70 images/person) | 5 | 234 | 47 | 281 |
 | **TOTAL** | **21** | **641** | **203** | **844** |
 
-### After Augmentation
-
-| Set | Before | After |
-|-----|--------|-------|
-| Train | 641 | 1834 |
-| Val | 203 | 203 (never augmented) |
 
 ### Augmentation Techniques
 
@@ -320,9 +282,9 @@ Haneen Mohammed Mousa,2026-03-27,09:03:22,0.923
 
 | File | Description |
 |------|-------------|
-| `config.py` | All tunable settings — only file you need to edit |
+| `config.py` | All tunable settings, only file you need to edit |
 | `face_pipeline.py` | Core AI functions: detect, align, embed, match, log, draw |
-| `main.py` | Real-time camera loop — runs the attendance system |
+| `main.py` | Real-time camera loop , runs the attendance system |
 | `enroll.py` | Enrolls new students with face quality checks |
 | `manage_database.py` | View, delete, or clear enrolled students |
 
